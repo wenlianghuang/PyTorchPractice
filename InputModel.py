@@ -1,14 +1,9 @@
 import torch
 import torch.nn as nn 
-import torch.optim as optim 
 import pandas as pd
 from torch.utils.data import Dataset, DataLoader
 from sklearn.model_selection import train_test_split
-
-# 检查是否有CUDA可用
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-# 定义数据集类别
+import sys
 class NumbersDataset(Dataset):
     def __init__(self, csv_file):
         self.dataframe = pd.read_csv(csv_file)
@@ -54,65 +49,47 @@ class Net(nn.Module):
         x = self.fc6(x)  # 不使用softmax，因为在交叉熵损失函数中包含了softmax
         return x
 
-model = Net().to(device)  # 将模型移到GPU上
-criterion = nn.CrossEntropyLoss()  # 使用交叉熵损失函数
-optimizer = optim.Adam(model.parameters(), lr=0.001)
-
-# 训练模型
-for epoch in range(50):
-    running_loss = 0.0
-    for i, data in enumerate(train_loader, 0):
-        inputs, labels = data
-        inputs, labels = inputs.to(device), labels.to(device)  # 将数据移到GPU上
-        optimizer.zero_grad()
-
-        outputs = model(inputs)
-        loss = criterion(outputs, labels)
-        loss.backward()
-        optimizer.step()
-
-        running_loss += loss.item()
-    
-    # 计算平均损失
-    average_loss = running_loss / len(train_loader)
-    print(f'Epoch {epoch+1}, Average Loss: {average_loss}')
-
-print('训练完成')
-
-# 保存模型
-torch.save(model.state_dict(), 'model.pth')
-print('模型已保存')
-
-# 测试模型
-correct = 0
-total = 0
-with torch.no_grad():
-    for data in test_loader:
-        inputs, labels = data
-        inputs, labels = inputs.to(device), labels.to(device)  # 将数据移到GPU上
-        outputs = model(inputs)
-        _, predicted = torch.max(outputs, dim=1)  # 修改为torch.max，并去掉.data
-        total += labels.size(0)
-        correct += (predicted == labels).sum().item()
-
-print(f'准确率: {100 * correct / total}%')
-
-'''
-# 加载模型进行预测
-loaded_model = Net().to(device)  # 将加载的模型移到GPU上
-loaded_model.load_state_dict(torch.load('model.pth'))
-loaded_model.eval()
-
-# 使用加载的模型进行预测
+# 加载模型的权重进行预测
 def predict(input_data):
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    loaded_model = Net()  # 创建模型实例
+    loaded_model.load_state_dict(torch.load('model.pth', map_location=device))  # 加载权重
+    loaded_model.eval()
+
     with torch.no_grad():
         output = loaded_model(input_data)
         _, predicted_label = torch.max(output, dim=1)
-        predicted_label = predicted_label.item() + 1  # 将索引转换回从1到6的标签值
+        predicted_label = predicted_label.item() + 1  # 将张量转换为标量，并映射回原始标签值
         return predicted_label
 
+mytext = ''
+with open("../request_res.txt",'r') as file:
+    mytext = file.readline()
+
 # 示例输入数据
-sample_input = torch.tensor([[2021]], dtype=torch.float32, device=device)  # 添加device=device
+sample_input = torch.tensor([int(mytext)], dtype=torch.float32).unsqueeze(0)  # 添加unsqueeze(0)将输入形状改为 [1, 1]
 predicted_label = predict(sample_input)
-print(f'输入值为 2021 时的预测标签为: {predicted_label}')
-'''
+#print(f'输入值为 1193 时的预测标签为: {predicted_label}')
+with open('Direct_result.json','w') as file:
+    if predicted_label == 1:
+        file.write("Speed Number One")
+    elif predicted_label == 2:
+        file.write("Speed Number Two")
+    elif predicted_label == 3:
+        file.write("Speed Number Three")
+    elif predicted_label == 4:
+        file.write("Speed Number Four")
+    elif predicted_label == 5:
+        file.write("Speed Number Five")
+    elif predicted_label == 6:
+        file.write("Speed Number Six")
+    elif predicted_label == 7:
+        file.write("Speed Number Seven")
+    elif predicted_label == 8:
+        file.write("Speed Number Eight")
+    elif predicted_label == 9:
+        file.write("Speed Number Nine")
+    elif predicted_label == 10:
+        file.write("Speed Number Ten")
+    elif predicted_label == 11:
+        file.write("Speed Last")
